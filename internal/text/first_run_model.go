@@ -6,6 +6,7 @@ import (
 	"github.com/baalimago/clai/internal/vendors/gemini"
 	"github.com/baalimago/clai/internal/vendors/mistral"
 	"github.com/baalimago/clai/internal/vendors/xai"
+	"github.com/baalimago/clai/internal/vendors/zai"
 )
 
 // FirstRunModel is the chat model a new textConfig.json starts with: the
@@ -19,6 +20,7 @@ func FirstRunModel(getenv func(string) string) string {
 		{"GEMINI_API_KEY", gemini.Default.Model},
 		{"MISTRAL_API_KEY", mistral.Default.Model},
 		{"DEEPSEEK_API_KEY", deepseek.Default.Model},
+		{"ZAI_API_KEY", zai.Default.Model},
 		{"XAI_API_KEY", xai.Default.Model},
 	}
 	for _, c := range candidates {

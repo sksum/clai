@@ -24,6 +24,7 @@ import (
 	"github.com/baalimago/clai/internal/vendors/openai"
 	"github.com/baalimago/clai/internal/vendors/openrouter"
 	"github.com/baalimago/clai/internal/vendors/xai"
+	"github.com/baalimago/clai/internal/vendors/zai"
 	"github.com/baalimago/clai/pkg/claierr"
 )
 
@@ -91,6 +92,17 @@ func selectTextQuerier(ctx context.Context, conf Configurations) (models.Querier
 	if strings.Contains(conf.Model, "gpt") {
 		found = true
 		defaultCpy := openai.GptDefault
+		defaultCpy.Model = conf.Model
+		qTmp, err := NewQuerier(ctx, conf, &defaultCpy)
+		if err != nil {
+			return nil, diag.Errorf("failed to create text querier: %w", err)
+		}
+		q = &qTmp
+	}
+
+	if strings.Contains(conf.Model, "glm") {
+		found = true
+		defaultCpy := zai.Default
 		defaultCpy.Model = conf.Model
 		qTmp, err := NewQuerier(ctx, conf, &defaultCpy)
 		if err != nil {

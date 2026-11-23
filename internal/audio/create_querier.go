@@ -15,6 +15,7 @@ import (
 	"github.com/baalimago/clai/internal/utils"
 	"github.com/baalimago/clai/internal/vendors/openai"
 	"github.com/baalimago/clai/internal/vendors/openrouter"
+	"github.com/baalimago/clai/internal/vendors/zai"
 	"github.com/baalimago/clai/pkg/claierr"
 	pkgtools "github.com/baalimago/clai/pkg/tools"
 )
@@ -26,7 +27,7 @@ import (
 type unknownModelError struct{ model string }
 
 func (e *unknownModelError) Error() string {
-	return fmt.Sprintf("failed to find audio transcriber for model: '%v', supported routes: 'or:' prefix (OpenRouter), model containing 'whisper' or 'transcribe' (OpenAI), 'test'/'mock_test' (mock)", e.model)
+	return fmt.Sprintf("failed to find audio transcriber for model: '%v', supported routes: 'or:' prefix (OpenRouter), model containing 'whisper' or 'transcribe' (OpenAI), 'glm-asr' (Z.ai), 'test'/'mock_test' (mock)", e.model)
 }
 
 func (e *unknownModelError) Unwrap() error { return claierr.ErrModelNotFound }
@@ -55,6 +56,13 @@ func createSplitter(conf Configurations) (*Splitter, error) {
 			return nil, diag.Errorf("failed to setup openrouter transcriber: %w", err)
 		}
 		transcriber = &vendorCpy
+	case strings.Contains(model, "glm-asr"):
+		vendorCpy := zai.TranscriberDefault
+		vendorCpy.Model = model
+		if err := vendorCpy.Setup(); err != nil {
+			return nil, diag.Errorf("failed to setup zai transcriber: %w", err)
+		}
+		transcriber = &vendorCpy
 	case strings.Contains(model, "whisper") || strings.Contains(model, "transcribe"):
 		vendorCpy := openai.TranscriberDefault
 		vendorCpy.Model = model
@@ -68,6 +76,11 @@ func createSplitter(conf Configurations) (*Splitter, error) {
 	budgets, err := ResolveBudgets(conf.Transcribe)
 	if err != nil {
 		return nil, err
+	}
+	// glm-asr takes at most 30 seconds a request (zai.MaxRequest), whatever the
+	// config's budgets say: the splitter must cut inside the API's limit.
+	if strings.Contains(model, "glm-asr") && budgets.MaxRequestDuration > zai.MaxRequest {
+		budgets.MaxRequestDuration = zai.MaxRequest
 	}
 	splitter := NewSplitter(transcriber, ExecRunner{})
 	splitter.Model = model

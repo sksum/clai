@@ -115,6 +115,9 @@ func vendorType(fromModel string) (string, string, string, error) {
 		return "mistral", "mistral", fromModel, nil
 	}
 
+	if strings.Contains(fromModel, "glm") {
+		return "zai", "glm", fromModel, nil
+	}
 	if strings.Contains(fromModel, "deepseek") {
 		return "deepseek", "deepseek", fromModel, nil
 	}
